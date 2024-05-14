@@ -541,4 +541,33 @@ vows
       }
     }
   })
+  .addBatch({
+    "Check For Prototype Pollution Vulnerability (CVE-2023-26136)": {
+      "set a cookie with domain __proto__": {
+        topic: function() {
+          const cookiejar = new tough.CookieJar(undefined, {
+            rejectPublicSuffixes: false
+          });
+          // try to pollute the prototype
+          cookiejar.setCookieSync(
+            "Slonser=polluted; Domain=__proto__; Path=/notauth",
+            "https://__proto__/admin",
+            (() => null),
+            (() => null)
+          );
+          cookiejar.setCookieSync(
+            "Auth=LD; Domain=google.com; Path=/notauth",
+            "https://google.com/",
+            (() => null),
+            (() => null)
+          );
+          this.callback();
+        },
+        "the result is a non-affected cookie, resilient to prototype pollution": function() {
+          const pollutedObject = {};
+          assert(pollutedObject["/notauth"] === undefined);
+        }
+      }
+    }
+  })
   .export(module);
